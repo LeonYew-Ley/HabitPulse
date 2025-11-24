@@ -1,0 +1,5 @@
+{
+  "name": "HabitPulse",
+  "description": "An avant-garde, offline-first habit tracker featuring GitHub-style heatmaps, deep data visualization, and a Bento-grid aesthetic.",
+  "requestFramePermissions": []
+}
