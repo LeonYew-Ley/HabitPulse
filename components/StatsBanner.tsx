@@ -16,10 +16,9 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ data, lang }) => {
   
   const totalHabits = data.habits.filter(h => !h.archived).length;
   
-  // Move hook before conditional return to satisfy Rules of Hooks
+  // Ensure all hooks are called unconditionally at the top level
   const quote = useMemo(() => getDailyQuote(), []); 
 
-  // Memoize heavy calculations
   const stats = useMemo(() => {
     if (totalHabits === 0) return { completedToday: 0, completionRate: 0, streak: 0 };
 
@@ -30,10 +29,6 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ data, lang }) => {
     const completionRate = Math.round((completedToday / totalHabits) * 100);
 
     // 2. Global Streak Calculation
-    // Logic: Consecutive days where at least ONE habit was completed.
-    // If today is active, streak includes today. If not, check if yesterday was active.
-    
-    // Create a set of all dates with any activity
     const activityMap = new Set<string>();
     data.habits.forEach(habit => {
       Object.values(habit.logs).forEach((log: DailyLog) => {
@@ -46,7 +41,6 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ data, lang }) => {
     let streak = 0;
     const today = new Date();
     
-    // Check start point
     const isTodayDone = activityMap.has(todayKey);
     
     const subtractDay = (d: Date) => {
@@ -55,16 +49,11 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ data, lang }) => {
       return newDate;
     };
 
-    // If today is done, start counting from today. 
-    // If today is NOT done, check yesterday. If yesterday is done, start from yesterday.
-    // If neither, streak is 0.
     let checkDate = isTodayDone ? today : subtractDay(today);
     
-    // Verify first check if we are starting from yesterday
     if (!isTodayDone && !activityMap.has(format(checkDate, 'yyyy-MM-dd'))) {
         streak = 0;
     } else {
-        // Count backwards
         while (true) {
             const dateStr = format(checkDate, 'yyyy-MM-dd');
             if (activityMap.has(dateStr)) {
@@ -79,6 +68,7 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ data, lang }) => {
     return { completedToday, completionRate, streak };
   }, [data.habits, totalHabits, todayKey]);
 
+  // Handle empty state here to ensure hooks are always called in the same order
   if (totalHabits === 0) return null;
 
   const { completedToday, completionRate, streak } = stats;

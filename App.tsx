@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { Plus, LayoutGrid, Settings as SettingsIcon, Moon, Sun, Check, Trash2 } from 'lucide-react';
 
@@ -24,6 +24,75 @@ const INITIAL_DATA: AppData = {
     weekStart: 'sunday',
   },
 };
+
+// --- Long Press Button Component ---
+interface LongPressButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  onComplete: () => void;
+  duration?: number; // ms
+  children: React.ReactNode;
+}
+
+const LongPressButton: React.FC<LongPressButtonProps> = ({ 
+  onComplete, 
+  duration = 3000, 
+  children, 
+  className, 
+  onClick, // intercepted
+  ...props 
+}) => {
+  const [isPressing, setIsPressing] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const start = (e: React.SyntheticEvent) => {
+    // We don't prevent default here to allow scrolling on touch devices
+    // unless it's a specific requirement. But we prevent context menu.
+    setIsPressing(true);
+    timeoutRef.current = setTimeout(() => {
+      onComplete();
+      setIsPressing(false);
+    }, duration);
+  };
+
+  const cancel = () => {
+    setIsPressing(false);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onMouseDown={start}
+      onMouseUp={cancel}
+      onMouseLeave={cancel}
+      onTouchStart={start}
+      onTouchEnd={cancel}
+      onTouchCancel={cancel}
+      onContextMenu={(e) => e.preventDefault()}
+      className={`relative overflow-hidden select-none ${className}`}
+      style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
+      {...props}
+    >
+      {/* Progress Fill */}
+      <div 
+        className="absolute inset-0 bg-rose-200 dark:bg-rose-900/60 pointer-events-none transition-all ease-linear"
+        style={{ 
+          width: isPressing ? '100%' : '0%', 
+          transitionDuration: isPressing ? `${duration}ms` : '0ms',
+          opacity: 0.8
+        }}
+      />
+      
+      {/* Content */}
+      <div className="relative z-10 flex items-center justify-center gap-2">
+        {children}
+      </div>
+    </button>
+  );
+};
+
 
 function App() {
   // --- State ---
@@ -142,16 +211,12 @@ function App() {
     closeHabitModal();
   };
 
-  const deleteHabit = (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (window.confirm(t(lang, 'deleteHabitConfirm'))) {
-        setData(prev => ({
-            ...prev,
-            habits: prev.habits.filter(h => h.id !== id)
-        }));
-        closeHabitModal();
-    }
+  const deleteHabit = (id: string) => {
+    setData(prev => ({
+        ...prev,
+        habits: prev.habits.filter(h => h.id !== id)
+    }));
+    closeHabitModal();
   }
 
   const toggleToday = (habitId: string) => {
@@ -219,24 +284,21 @@ function App() {
     closeLogModal();
   };
 
-  const deleteLog = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const deleteLog = () => {
     if (!selectedDayHabitId || !selectedDate) return;
     const dateKey = format(selectedDate, 'yyyy-MM-dd');
 
-    if (window.confirm(t(lang, 'confirmDeleteLog'))) {
-        setData(prev => {
-            const habits = prev.habits.map(h => {
-                if (h.id !== selectedDayHabitId) return h;
-                const newLogs = { ...h.logs };
-                // Using delete operator on the object key to remove it completely
-                delete newLogs[dateKey]; 
-                return { ...h, logs: newLogs };
-            });
-            return { ...prev, habits };
+    setData(prev => {
+        const habits = prev.habits.map(h => {
+            if (h.id !== selectedDayHabitId) return h;
+            const newLogs = { ...h.logs };
+            // Using delete operator on the object key to remove it completely
+            delete newLogs[dateKey]; 
+            return { ...h, logs: newLogs };
         });
-        closeLogModal();
-    }
+        return { ...prev, habits };
+    });
+    closeLogModal();
   };
 
   // --- Modals ---
@@ -283,14 +345,15 @@ function App() {
   const formatDateTitle = (date: Date | null) => {
     if (!date) return t(lang, 'details');
     
-    // Determine time to show
-    let timeStr = format(new Date(), 'HH:mm'); // Default to current time
+    // Default time is current time
+    let timeStr = format(new Date(), 'HH:mm');
     
     if (selectedDayHabitId) {
        const habit = data.habits.find(h => h.id === selectedDayHabitId);
        const dateKey = format(date, 'yyyy-MM-dd');
        const log = habit?.logs[dateKey];
        
+       // If record exists, use record time
        if (log?.timestamp) {
            timeStr = format(new Date(log.timestamp), 'HH:mm');
        }
@@ -303,7 +366,8 @@ function App() {
         return `${ymd} ${timeStr} ${week}`;
     }
     
-    return format(date, 'EEEE, MMMM do');
+    // Improved English display: Date + Time
+    return `${format(date, 'EEEE, MMM do')} · ${timeStr}`;
   };
 
   // --- Render ---
@@ -460,13 +524,13 @@ function App() {
                     {editingHabit ? t(lang, 'save') : t(lang, 'create')}
                 </button>
                 {editingHabit && (
-                     <button 
-                     type="button"
-                     onClick={(e) => deleteHabit(editingHabit.id, e)}
-                     className="px-4 py-3 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors font-medium"
-                 >
-                     {t(lang, 'delete')}
-                 </button>
+                     <LongPressButton
+                        onComplete={() => deleteHabit(editingHabit.id)}
+                        className="px-4 py-3 rounded-lg text-rose-500 bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-100 dark:hover:bg-rose-900/20 transition-colors font-medium min-w-[120px]"
+                        duration={3000}
+                     >
+                        {t(lang, 'holdToDelete')}
+                     </LongPressButton>
                 )}
             </div>
         </div>
@@ -513,14 +577,14 @@ function App() {
                     {t(lang, 'saveLog')}
                 </button>
                 
-                <button
-                    type="button"
-                    onClick={deleteLog}
-                    className="px-4 py-3 rounded-lg border border-rose-200 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 active:bg-rose-500 active:text-white transition-colors font-medium dark:border-rose-900"
+                <LongPressButton
+                    onComplete={deleteLog}
+                    className="px-4 py-3 rounded-lg border border-rose-200 bg-transparent text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors font-medium dark:border-rose-900"
                     title={t(lang, 'deleteLog')}
+                    duration={3000}
                 >
                     <Trash2 size={20} />
-                </button>
+                </LongPressButton>
             </div>
         </div>
       </Modal>
