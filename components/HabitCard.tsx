@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Check, MoreHorizontal, Activity } from 'lucide-react';
@@ -44,7 +45,7 @@ export const HabitCard: React.FC<HabitCardProps> = ({
   };
 
   return (
-    <div className="group relative bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4 overflow-hidden">
+    <div className="group relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4 overflow-hidden">
       
       {/* Header */}
       <div className="flex justify-between items-start">

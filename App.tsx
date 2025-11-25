@@ -263,7 +263,7 @@ function App() {
         const habits = prev.habits.map(h => {
             if (h.id !== selectedDayHabitId) return h;
             
-            const existingLog = h.logs[dateKey] || { date: dateKey, completed: false };
+            const existingLog: DailyLog = h.logs[dateKey] || { date: dateKey, completed: false };
             
             // If adding a note/rating, we assume it implies completion or tracking
             const newLog: DailyLog = {

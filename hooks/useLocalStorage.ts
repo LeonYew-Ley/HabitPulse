@@ -1,9 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
   // Get from local storage then parse stored json or return initialValue
-  const readValue = (): T => {
+  const readValue = useCallback((): T => {
     if (typeof window === 'undefined') {
       return initialValue;
     }
@@ -15,13 +15,11 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
       console.warn(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
-  };
+  }, [initialValue, key]);
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
 
-  // Return a wrapped version of useState's setter function that ...
-  // ... persists the new value to localStorage.
-  const setValue = (value: T | ((val: T) => T)) => {
+  const setValue = useCallback((value: T | ((val: T) => T)) => {
     setStoredValue((current) => {
       try {
         const valueToStore = value instanceof Function ? value(current) : value;
@@ -35,12 +33,31 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
         return current;
       }
     });
-  };
+  }, [key]);
 
+  // Sync state if local storage changes (e.g., from another tab)
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === key && event.newValue !== null) {
+        try {
+          setStoredValue(JSON.parse(event.newValue));
+        } catch (error) {
+          console.warn(`Error parsing storage change for key "${key}":`, error);
+        }
+      } else if (event.key === key && event.newValue === null) {
+          // Key was removed
+          setStoredValue(initialValue);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [key, initialValue]);
+
+  // Re-read on mount to ensure hydration matches
   useEffect(() => {
     setStoredValue(readValue());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [readValue]);
 
   return [storedValue, setValue];
 }
