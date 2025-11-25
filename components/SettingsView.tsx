@@ -3,6 +3,7 @@ import React, { useRef, useState } from 'react';
 import { Download, Upload, Trash2, AlertTriangle, CheckCircle2, Globe, Calendar, Moon, Sun, Monitor } from 'lucide-react';
 import { AppData, Language, WeekStart } from '../types';
 import { t } from '../utils/i18n';
+import { LongPressButton } from '../App';
 
 interface SettingsViewProps {
   data: AppData;
@@ -141,7 +142,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ data, onImport, onRe
             </div>
             <button 
               onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 px-4 py-2 border-2 border-zinc-500 dark:border-zinc-500 text-zinc-700 dark:text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
               <Download size={16} />
               {t(lang, 'exportBtn')}
@@ -166,7 +167,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ data, onImport, onRe
               />
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 border-2 border-zinc-500 dark:border-zinc-500 text-zinc-700 dark:text-zinc-300 rounded-lg text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 <Upload size={16} />
                 {t(lang, 'importBtn')}
@@ -174,20 +175,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ data, onImport, onRe
             </div>
           </div>
 
-           {/* Danger Zone */}
+           {/* Reset */}
            <div className="mt-4 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-            <h3 className="text-rose-500 font-semibold text-sm mb-4">{t(lang, 'dangerZone')}</h3>
-            <button 
-              onClick={() => {
-                if(window.confirm(t(lang, 'confirmReset'))) {
-                  onReset();
-                }
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900 rounded-lg text-sm font-medium hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors w-full justify-center sm:w-auto"
+            <LongPressButton
+              onComplete={onReset}
+              className="flex items-center gap-2 px-4 py-2 text-rose-500 bg-rose-50/50 dark:bg-rose-900/10 hover:bg-rose-50 dark:hover:bg-rose-900/15 border-2 border-rose-300 dark:border-rose-400 transition-colors font-medium w-full justify-center sm:w-auto rounded-lg text-sm"
+              duration={3000}
             >
               <Trash2 size={16} />
-              {t(lang, 'reset')}
-            </button>
+              {t(lang, 'holdToReset')}
+            </LongPressButton>
           </div>
         </div>
       </div>

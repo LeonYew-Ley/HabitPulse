@@ -20,19 +20,19 @@ const INITIAL_DATA: AppData = {
   settings: {
     theme: 'system',
     userName: 'User',
-    language: 'en',
+    language: 'zh',
     weekStart: 'sunday',
   },
 };
 
 // --- Long Press Button Component ---
-interface LongPressButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface LongPressButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   onComplete: () => void;
   duration?: number; // ms
   children: React.ReactNode;
 }
 
-const LongPressButton: React.FC<LongPressButtonProps> = ({ 
+export const LongPressButton: React.FC<LongPressButtonProps> = ({ 
   onComplete, 
   duration = 3000, 
   children, 
@@ -119,7 +119,7 @@ function App() {
   const dragOffset = useRef({ x: 0, y: 0 });
   const isDragging = useRef(false);
 
-  const lang = data.settings.language || 'en';
+  const lang = data.settings.language || 'zh';
 
   // --- Effects ---
 
@@ -178,7 +178,7 @@ function App() {
             ...prev,
             settings: {
                 ...prev.settings,
-                language: prev.settings.language || 'en',
+                language: prev.settings.language || 'zh',
                 weekStart: prev.settings.weekStart || 'sunday'
             }
         }));
@@ -515,11 +515,14 @@ function App() {
             onUpdateSetting={updateSetting}
           />
         ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 pb-20">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 pb-20 relative">
             {data.habits.length === 0 ? (
-                <div className="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl text-zinc-400">
-                    <LayoutGrid size={48} className="mb-4 opacity-50"/>
-                    <p>{t(lang, 'noHabits')}</p>
+                <div className="col-span-full flex flex-col items-center justify-center relative mt-2">
+                    {/* Placeholder Card - Matching HabitCard dimensions more closely */}
+                    <div className="w-full h-40 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl flex flex-col items-center justify-center text-zinc-400 bg-zinc-50/50 dark:bg-zinc-900/50">
+                        <LayoutGrid size={24} className="mb-2 opacity-50"/>
+                        <p className="text-sm font-medium">{t(lang, 'noHabits')}</p>
+                    </div>
                 </div>
             ) : (
                 data.habits.map(habit => (
@@ -613,14 +616,19 @@ function App() {
             <div className="pt-4 flex gap-3">
                 <button 
                     onClick={saveHabit}
-                    className="flex-1 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                    disabled={!habitFormTitle.trim()}
+                    className={`flex-1 py-3 rounded-lg font-semibold transition-opacity ${
+                        !habitFormTitle.trim() 
+                            ? 'bg-zinc-300 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-500 cursor-not-allowed' 
+                            : 'bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 hover:opacity-90'
+                    }`}
                 >
                     {editingHabit ? t(lang, 'save') : t(lang, 'create')}
                 </button>
                 {editingHabit && (
                      <LongPressButton
                         onComplete={() => deleteHabit(editingHabit.id)}
-                        className="px-4 py-3 rounded-lg text-rose-500 bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-100 dark:hover:bg-rose-900/20 transition-colors font-medium min-w-[120px]"
+                        className="px-4 py-3 rounded-lg text-rose-500 bg-rose-50/50 dark:bg-rose-900/10 hover:bg-rose-50 dark:hover:bg-rose-900/15 border-2 border-rose-400 dark:border-rose-400 transition-colors font-medium min-w-[120px]"
                         duration={3000}
                      >
                         {t(lang, 'holdToDelete')}
@@ -666,21 +674,23 @@ function App() {
             <div className="pt-4 flex gap-3">
                 <button
                     onClick={saveLogDetails}
-                    className="flex-1 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+                    disabled={!logFormNote.trim() && logFormRating === 0}
+                    className={`flex-1 py-3 rounded-lg font-semibold transition-opacity ${
+                        !logFormNote.trim() && logFormRating === 0
+                            ? 'bg-zinc-300 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-500 cursor-not-allowed' 
+                            : 'bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 hover:opacity-90'
+                    }`}
                 >
                     {t(lang, 'saveLog')}
                 </button>
                  {selectedDayHabitId && selectedDate && (
-                     <button
-                        onClick={() => {
-                            if(window.confirm(t(lang, 'confirmDeleteLog'))) {
-                                deleteLog();
-                            }
-                        }}
-                        className="px-4 py-3 rounded-lg text-rose-500 bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-100 dark:hover:bg-rose-900/20 transition-colors font-medium"
+                     <LongPressButton
+                        onComplete={deleteLog}
+                        className="px-4 py-3 rounded-lg text-rose-400 bg-rose-50/50 dark:bg-rose-900/5 hover:bg-rose-50 dark:hover:bg-rose-900/15 border-2 border-rose-300 dark:border-rose-400 transition-colors font-medium"
+                        duration={3000}
                      >
                         <Trash2 size={20} />
-                     </button>
+                     </LongPressButton>
                 )}
             </div>
         </div>
