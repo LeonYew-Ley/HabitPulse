@@ -7,6 +7,33 @@
     <title>HabitPulse</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      // 在页面渲染之前应用主题，避免白色闪烁
+      (function() {
+        try {
+          const stored = localStorage.getItem('habitpulse_data');
+          if (stored) {
+            const data = JSON.parse(stored);
+            const theme = data.settings?.theme || 'system';
+            
+            let isDark = false;
+            if (theme === 'dark') {
+              isDark = true;
+            } else if (theme === 'system') {
+              isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
+            
+            if (isDark) {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+          }
+        } catch (e) {
+          // 如果读取失败，使用默认主题
+        }
+      })();
+    </script>
+    <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
