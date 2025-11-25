@@ -628,10 +628,10 @@ function App() {
                 {editingHabit && (
                      <LongPressButton
                         onComplete={() => deleteHabit(editingHabit.id)}
-                        className="px-4 py-3 rounded-lg text-rose-500 bg-rose-50/50 dark:bg-rose-900/10 hover:bg-rose-50 dark:hover:bg-rose-900/15 border-2 border-rose-400 dark:border-rose-400 transition-colors font-medium min-w-[120px]"
+                        className="px-4 py-3 rounded-lg text-rose-500 bg-rose-50/50 dark:bg-rose-900/10 hover:bg-rose-50 dark:hover:bg-rose-900/15 border-2 border-rose-400 dark:border-rose-400 transition-colors font-medium min-w-[120px] flex items-center justify-center"
                         duration={3000}
                      >
-                        {t(lang, 'holdToDelete')}
+                        <Trash2 size={20} />
                      </LongPressButton>
                 )}
             </div>
@@ -686,7 +686,7 @@ function App() {
                  {selectedDayHabitId && selectedDate && (
                      <LongPressButton
                         onComplete={deleteLog}
-                        className="px-4 py-3 rounded-lg text-rose-400 bg-rose-50/50 dark:bg-rose-900/5 hover:bg-rose-50 dark:hover:bg-rose-900/15 border-2 border-rose-300 dark:border-rose-400 transition-colors font-medium"
+                        className="px-4 py-3 rounded-lg text-rose-400 bg-rose-50/50 dark:bg-rose-900/5 hover:bg-rose-50 dark:hover:bg-rose-900/15 border-2 border-rose-300 dark:border-rose-400 transition-colors font-medium min-w-[120px] flex items-center justify-center"
                         duration={3000}
                      >
                         <Trash2 size={20} />
