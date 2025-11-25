@@ -31,7 +31,8 @@ export const translations = {
     confirmDeleteLog: 'Are you sure you want to remove this log?',
     checkIn: 'Check-in',
     done: 'Done',
-    daysRecorded: 'days recorded',
+    daysRecorded: 'days recorded', // Kept for legacy compatibility if needed, but unused in new UI
+    daysThisMonth: 'Completed {count} days this month',
     less: 'Less',
     more: 'More',
     totalCompletions: 'total completions',
@@ -87,6 +88,7 @@ export const translations = {
     checkIn: '打卡',
     done: '已完成',
     daysRecorded: '天已记录',
+    daysThisMonth: '本月已坚持 {count} 天',
     less: '少',
     more: '多',
     totalCompletions: '累计完成',

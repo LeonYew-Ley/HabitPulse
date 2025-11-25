@@ -99,6 +99,7 @@ function App() {
   const [data, setData] = useLocalStorage<AppData>('habitpulse_data', INITIAL_DATA);
   const [view, setView] = useState<ViewState>('dashboard');
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isNavVisible, setIsNavVisible] = useState(true);
   
   // Modal States
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
@@ -113,9 +114,31 @@ function App() {
   const [logFormNote, setLogFormNote] = useState('');
   const [logFormRating, setLogFormRating] = useState<number>(0);
 
+  // FAB Drag State
+  const [fabPos, setFabPos] = useState<{x: number, y: number} | null>(null);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+
   const lang = data.settings.language || 'en';
 
   // --- Effects ---
+
+  // Scroll handler for auto-hiding nav
+  useEffect(() => {
+    const handleScroll = () => {
+        // Show nav if at top (within 10px), otherwise hide
+        // This is only relevant for mobile where nav is fixed top
+        const currentScrollY = window.scrollY;
+        if (currentScrollY < 10) {
+            setIsNavVisible(true);
+        } else {
+            setIsNavVisible(false);
+        }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Theme handling
   useEffect(() => {
@@ -341,6 +364,43 @@ function App() {
     setSelectedDate(null);
   };
 
+  // --- FAB Drag Logic ---
+  const handleFabPointerDown = (e: React.PointerEvent) => {
+    // Prevent default to stop scrolling/text selection on mobile
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    dragOffset.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+    isDragging.current = false;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handleFabPointerMove = (e: React.PointerEvent) => {
+    if (e.buttons === 0) return;
+    
+    // Threshold for drag detection
+    isDragging.current = true;
+    
+    const x = e.clientX - dragOffset.current.x;
+    const y = e.clientY - dragOffset.current.y;
+    
+    // Simple bounds checking could go here, but free movement is fine for now
+    setFabPos({ x, y });
+  };
+
+  const handleFabPointerUp = (e: React.PointerEvent) => {
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    if (!isDragging.current) {
+        // If it wasn't a drag, treat as click
+        if (view === 'dashboard') openHabitModal();
+    }
+    isDragging.current = false;
+  };
+
   // --- Helper for Date Title ---
   const formatDateTitle = (date: Date | null) => {
     if (!date) return t(lang, 'details');
@@ -375,8 +435,22 @@ function App() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row font-sans selection:bg-zinc-200 dark:selection:bg-zinc-700">
       
-      {/* Sidebar / Navigation */}
-      <nav className="w-full md:w-20 md:h-screen bg-white dark:bg-zinc-900 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 flex md:flex-col items-center justify-between p-4 md:py-8 fixed md:sticky top-0 z-40">
+      {/* Sidebar / Navigation 
+          Updated logic: 
+          - Mobile: Fixed at top. Translates Y to hide when not at top. 
+          - Desktop: Sticky at left. md:translate-y-0 overrides the hiding logic.
+      */}
+      <nav 
+        className={`
+            w-full md:w-20 md:h-screen bg-white dark:bg-zinc-900 
+            border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 
+            flex md:flex-col items-center justify-between p-4 md:py-8 
+            fixed md:sticky top-0 z-40
+            transition-transform duration-300
+            ${isNavVisible ? 'translate-y-0' : '-translate-y-full'} 
+            md:translate-y-0
+        `}
+      >
         <div className="flex items-center gap-2 md:flex-col">
           <div className="w-10 h-10 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-zinc-500/10">
             H
@@ -410,30 +484,13 @@ function App() {
       </nav>
 
       {/* Main Content Area */}
-      {/* Adjusted padding: pt-28 for mobile to account for fixed nav and provide spacing */}
-      <main className="flex-1 p-4 md:p-8 lg:p-12 pt-28 md:pt-8 max-w-7xl mx-auto w-full">
+      {/* Updated padding: 
+          - pt-24 (96px) for mobile to ensure gap between fixed nav (approx 80px) and banner.
+          - md:pt-4 for desktop to reduce top spacing.
+      */}
+      <main className="flex-1 p-4 md:p-8 lg:p-12 pt-24 md:pt-4 max-w-7xl mx-auto w-full">
         
-        {/* Header Section */}
-        <div className="flex justify-between items-end mb-10 animate-in fade-in duration-500">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
-              {view === 'dashboard' ? t(lang, 'dashboard') : t(lang, 'settings')}
-            </h1>
-            <p className="text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
-               {view === 'dashboard' ? `${data.habits.length} ${t(lang, 'activeHabits')}` : t(lang, 'managePreferences')}
-            </p>
-          </div>
-          
-          {view === 'dashboard' && (
-            <button 
-              onClick={() => openHabitModal()}
-              className="flex items-center gap-2 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 px-5 py-3 rounded-xl font-semibold shadow-lg shadow-zinc-900/10 hover:translate-y-[-2px] hover:shadow-xl transition-all active:scale-95"
-            >
-              <Plus size={20} />
-              <span className="hidden sm:inline">{t(lang, 'newHabit')}</span>
-            </button>
-          )}
-        </div>
+        {/* Header Removed as requested */}
 
         {view === 'dashboard' && <StatsBanner data={data} lang={lang} />}
 
@@ -446,7 +503,7 @@ function App() {
             onUpdateSetting={updateSetting}
           />
         ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-20">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 pb-20">
             {data.habits.length === 0 ? (
                 <div className="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl text-zinc-400">
                     <LayoutGrid size={48} className="mb-4 opacity-50"/>
@@ -469,6 +526,31 @@ function App() {
             </div>
         )}
       </main>
+
+      {/* Floating Action Button - Draggable */}
+      {view === 'dashboard' && (
+        <button 
+            onPointerDown={handleFabPointerDown}
+            onPointerMove={handleFabPointerMove}
+            onPointerUp={handleFabPointerUp}
+            style={fabPos 
+                ? { left: fabPos.x, top: fabPos.y, bottom: 'auto', right: 'auto', touchAction: 'none' } 
+                : { bottom: '2rem', right: '2rem', touchAction: 'none' }
+            }
+            className={`
+                fixed z-50 shadow-2xl shadow-zinc-900/40 dark:shadow-black/50
+                bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900
+                transition-transform hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing
+                flex items-center justify-center gap-2
+                p-4 md:px-6 md:py-3 rounded-full
+            `}
+        >
+            <Plus size={24} strokeWidth={2.5} />
+            <span className="hidden md:inline font-bold tracking-tight text-sm">
+                {t(lang, 'newHabit')}
+            </span>
+        </button>
+      )}
 
       {/* Create/Edit Habit Modal */}
       <Modal 
@@ -569,26 +651,28 @@ function App() {
                 />
             </div>
 
-            <div className="flex gap-3">
-                <button 
+            <div className="pt-4 flex gap-3">
+                <button
                     onClick={saveLogDetails}
                     className="flex-1 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
                 >
                     {t(lang, 'saveLog')}
                 </button>
-                
-                <LongPressButton
-                    onComplete={deleteLog}
-                    className="px-4 py-3 rounded-lg border border-rose-200 bg-transparent text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors font-medium dark:border-rose-900"
-                    title={t(lang, 'deleteLog')}
-                    duration={3000}
-                >
-                    <Trash2 size={20} />
-                </LongPressButton>
+                 {selectedDayHabitId && selectedDate && (
+                     <button
+                        onClick={() => {
+                            if(window.confirm(t(lang, 'confirmDeleteLog'))) {
+                                deleteLog();
+                            }
+                        }}
+                        className="px-4 py-3 rounded-lg text-rose-500 bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-100 dark:hover:bg-rose-900/20 transition-colors font-medium"
+                     >
+                        <Trash2 size={20} />
+                     </button>
+                )}
             </div>
         </div>
       </Modal>
-
     </div>
   );
 }

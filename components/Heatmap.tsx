@@ -1,6 +1,6 @@
 
 import React, { useMemo, useEffect, useRef, useState } from 'react';
-import { eachDayOfInterval, format, isSameDay } from 'date-fns';
+import { eachDayOfInterval, format, isSameDay, isSameMonth } from 'date-fns';
 import { DailyLog, WeekStart, Language } from '../types';
 import { t } from '../utils/i18n';
 
@@ -117,10 +117,16 @@ export const Heatmap: React.FC<HeatmapProps> = ({
     }
   }, [weeks]);
 
-  const getOpacity = (log?: DailyLog) => {
-    if (!log || !log.completed) return 0.1; // Base opacity for empty
-    if (log.rating) return 0.4 + (log.rating / 10); // 0.5 to 1.0 based on rating
-    return 1; // Solid if just completed
+  const getOpacity = (log: DailyLog | undefined, isCurrentMonth: boolean) => {
+    if (log?.completed) {
+        if (log.rating) return 0.4 + (log.rating / 10);
+        // Completed items in past months are slightly less vibrant to focus on "now"
+        return isCurrentMonth ? 1 : 0.6; 
+    }
+    // Empty State Logic:
+    // Current Month: Higher opacity (0.15) to make the grid visible
+    // Past Months: Very low opacity (0.04) to fade into background
+    return isCurrentMonth ? 0.15 : 0.04;
   };
 
   // Generate labels based on week start
@@ -175,6 +181,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({
                     const dateKey = format(day, 'yyyy-MM-dd');
                     const log = logs[dateKey];
                     const isToday = isSameDay(day, today);
+                    const isCurrentMonth = isSameMonth(day, today);
                     
                     return (
                     <div
@@ -187,7 +194,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({
                         `}
                         style={{
                         backgroundColor: log?.completed ? color : 'currentColor',
-                        opacity: log?.completed ? getOpacity(log) : 0.06,
+                        opacity: getOpacity(log, isCurrentMonth),
                         }}
                         title={`${format(day, 'MMM d, yyyy')}${log?.completed ? ` - ${t(lang as Language, 'done')}` : ''}`}
                     />

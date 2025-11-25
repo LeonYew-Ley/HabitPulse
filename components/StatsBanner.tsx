@@ -78,7 +78,7 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ data, lang }) => {
 
   return (
     <div 
-        className={`relative w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl mb-8 text-zinc-900 dark:text-zinc-50 shadow-sm transition-all duration-500 ease-in-out
+        className={`relative w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl mb-4 text-zinc-900 dark:text-zinc-50 shadow-sm transition-all duration-500 ease-in-out
         ${isCollapsed ? 'pt-[10px] pb-[8px] pl-[20px] pr-[10px]' : 'pt-6 px-6 pb-[10px]'}`}
     >
       
