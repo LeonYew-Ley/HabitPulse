@@ -385,10 +385,22 @@ function App() {
     // Threshold for drag detection
     isDragging.current = true;
     
-    const x = e.clientX - dragOffset.current.x;
-    const y = e.clientY - dragOffset.current.y;
+    let x = e.clientX - dragOffset.current.x;
+    let y = e.clientY - dragOffset.current.y;
     
-    // Simple bounds checking could go here, but free movement is fine for now
+    // Bounds checking
+    const el = e.currentTarget as HTMLElement;
+    const width = el.offsetWidth;
+    const height = el.offsetHeight;
+    
+    // Use documentElement.clientXXX to exclude scrollbars if any
+    const maxX = document.documentElement.clientWidth - width;
+    const maxY = document.documentElement.clientHeight - height;
+
+    // Clamp values
+    x = Math.max(0, Math.min(x, maxX));
+    y = Math.max(0, Math.min(y, maxY));
+    
     setFabPos({ x, y });
   };
 
