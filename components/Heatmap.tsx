@@ -117,18 +117,6 @@ export const Heatmap: React.FC<HeatmapProps> = ({
     }
   }, [weeks]);
 
-  const getOpacity = (log: DailyLog | undefined, isCurrentMonth: boolean) => {
-    if (log?.completed) {
-        if (log.rating) return 0.4 + (log.rating / 10);
-        // Completed items in past months are slightly less vibrant to focus on "now"
-        return isCurrentMonth ? 1 : 0.6; 
-    }
-    // Empty State Logic:
-    // Current Month: Higher opacity (0.15) to make the grid visible
-    // Past Months: Very low opacity (0.04) to fade into background
-    return isCurrentMonth ? 0.15 : 0.04;
-  };
-
   // Generate labels based on week start
   const dayLabels = weekStart === 'monday' 
     ? ['M', '', 'W', '', 'F', '', 'S'] 
@@ -175,33 +163,64 @@ export const Heatmap: React.FC<HeatmapProps> = ({
             `}</style>
 
             <div className="flex gap-[3px] min-w-max pr-1">
-            {weeks.map((week, wIndex) => (
+            {weeks.map((week, wIndex) => {
+                return (
                 <div key={wIndex} className="flex flex-col gap-[3px]">
-                {week.map((day, dIndex) => {
-                    const dateKey = format(day, 'yyyy-MM-dd');
-                    const log = logs[dateKey];
-                    const isToday = isSameDay(day, today);
-                    const isCurrentMonth = isSameMonth(day, today);
-                    
-                    return (
-                    <div
-                        key={dateKey}
-                        onClick={() => interactive && onClickDay(day, log)}
-                        className={`
-                        w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm transition-all duration-200 flex-shrink-0
-                        ${interactive ? 'cursor-pointer hover:scale-125 hover:z-10' : ''}
-                        ${isToday ? 'ring-1 ring-offset-1 ring-offset-zinc-50 dark:ring-offset-zinc-900 ring-zinc-400 dark:ring-zinc-500' : ''}
-                        `}
-                        style={{
-                        backgroundColor: log?.completed ? color : 'currentColor',
-                        opacity: getOpacity(log, isCurrentMonth),
-                        }}
-                        title={`${format(day, 'MMM d, yyyy')}${log?.completed ? ` - ${t(lang as Language, 'done')}` : ''}`}
-                    />
-                    );
-                })}
+                    {week.map((day, dIndex) => {
+                        const dateKey = format(day, 'yyyy-MM-dd');
+                        const log = logs[dateKey];
+                        const isToday = isSameDay(day, today);
+                        
+                        // Strict Month Visualization Logic
+                        const monthIndex = day.getMonth();
+                        const isEvenMonth = monthIndex % 2 === 0;
+
+                        // Determine visual style
+                        let bgClass = '';
+                        let opacityStyle = 1;
+                        let customBgColor = undefined;
+
+                        if (log?.completed) {
+                            customBgColor = color;
+                            // Slight variation for history vs today
+                            if (log.rating) {
+                                opacityStyle = 0.4 + (log.rating / 10);
+                            } else {
+                                opacityStyle = 1;
+                            }
+                        } else {
+                            // Empty State with Alternating Month Patterns
+                            // Even Months: Standard lighter gray
+                            // Odd Months: Slightly darker gray to create "blocks"
+                            // Using tailored zinc shades for light/dark mode
+                            bgClass = isEvenMonth 
+                                ? 'bg-zinc-100 dark:bg-zinc-800/50' 
+                                : 'bg-zinc-200 dark:bg-zinc-800';
+                            
+                            // Remove heavy opacity fade for past months so the pattern is visible
+                            opacityStyle = 1; 
+                        }
+                        
+                        return (
+                        <div
+                            key={dateKey}
+                            onClick={() => interactive && onClickDay(day, log)}
+                            className={`
+                            w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm transition-all duration-200 flex-shrink-0
+                            ${interactive ? 'cursor-pointer hover:scale-125 hover:z-10' : ''}
+                            ${isToday ? 'ring-1 ring-offset-1 ring-offset-zinc-50 dark:ring-offset-zinc-900 ring-zinc-400 dark:ring-zinc-500' : ''}
+                            ${!log?.completed ? bgClass : ''}
+                            `}
+                            style={{
+                                backgroundColor: customBgColor,
+                                opacity: opacityStyle,
+                            }}
+                            title={`${format(day, 'MMM d, yyyy')}${log?.completed ? ` - ${t(lang as Language, 'done')}` : ''}`}
+                        />
+                        );
+                    })}
                 </div>
-            ))}
+            )})}
             </div>
         </div>
       </div>
