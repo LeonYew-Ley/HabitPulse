@@ -58,6 +58,8 @@ export const translations = {
     light: 'Light',
     dark: 'Dark',
     systemTheme: 'Follow System',
+    previousMonth: 'Previous Month',
+    nextMonth: 'Next Month',
   },
   zh: {
     dashboard: '仪表盘',
@@ -115,6 +117,8 @@ export const translations = {
     light: '浅色',
     dark: '深色',
     systemTheme: '跟随系统',
+    previousMonth: '上个月',
+    nextMonth: '下个月',
   }
 };
 

@@ -9,6 +9,7 @@ import { HabitCard } from './components/HabitCard';
 import { Modal } from './components/Modal';
 import { SettingsView } from './components/SettingsView';
 import { StatsBanner } from './components/StatsBanner';
+import { CalendarPanel } from './components/CalendarPanel';
 import { t } from './utils/i18n';
 import { playCheckSound } from './utils/sound';
 
@@ -104,15 +105,16 @@ function App() {
   // Modal States
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [selectedDayHabitId, setSelectedDayHabitId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date>(new Date());
 
   // Form States
   const [habitFormTitle, setHabitFormTitle] = useState('');
   const [habitFormColor, setHabitFormColor] = useState(HABIT_COLORS[0].value);
   const [logFormNote, setLogFormNote] = useState('');
-  const [logFormRating, setLogFormRating] = useState<number>(0);
 
   // FAB Drag State
   const [fabPos, setFabPos] = useState<{x: number, y: number} | null>(null);
@@ -184,6 +186,18 @@ function App() {
         }));
     }
   }, []);
+
+  // 同步月历面板选中日期的表单数据
+  useEffect(() => {
+    if (isCalendarModalOpen && selectedDayHabitId && calendarSelectedDate) {
+      const habit = data.habits.find(h => h.id === selectedDayHabitId);
+      if (habit) {
+        const dateKey = format(calendarSelectedDate, 'yyyy-MM-dd');
+        const log = habit.logs[dateKey];
+        setLogFormNote(log?.note || '');
+      }
+    }
+  }, [isCalendarModalOpen, selectedDayHabitId, calendarSelectedDate, data.habits]);
 
   // --- Actions ---
 
@@ -288,11 +302,10 @@ function App() {
             
             const existingLog: DailyLog = h.logs[dateKey] || { date: dateKey, completed: false };
             
-            // If adding a note/rating, we assume it implies completion or tracking
+            // If adding a note, we assume it implies completion or tracking
             const newLog: DailyLog = {
                 ...existingLog,
                 note: logFormNote,
-                rating: logFormRating as any,
                 completed: existingLog.completed || true,
                 timestamp: existingLog.timestamp || new Date().toISOString()
             };
@@ -354,8 +367,118 @@ function App() {
     setSelectedDayHabitId(habitId);
     setSelectedDate(date);
     setLogFormNote(log?.note || '');
-    setLogFormRating(log?.rating || 0);
     setIsLogModalOpen(true);
+  };
+
+  const openCalendarModal = (habitId: string, date: Date) => {
+    setSelectedDayHabitId(habitId);
+    setCalendarSelectedDate(date);
+    const habit = data.habits.find(h => h.id === habitId);
+    if (!habit) return;
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const log = habit.logs[dateKey];
+    setLogFormNote(log?.note || '');
+    setIsCalendarModalOpen(true);
+  };
+
+  const closeCalendarModal = () => {
+    setIsCalendarModalOpen(false);
+    // 保存当前选中日期的备注和评分
+    if (selectedDayHabitId && calendarSelectedDate) {
+      saveCalendarLogDetails();
+    }
+  };
+
+  // 选中日期（单击）
+  const selectDate = (date: Date) => {
+    // 不能选择未来日期
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateToCheck = new Date(date);
+    dateToCheck.setHours(0, 0, 0, 0);
+    if (dateToCheck > today) return;
+    setCalendarSelectedDate(date);
+  };
+
+  // 快速打卡/取消打卡（长按）
+  const toggleDateCompletion = (date: Date) => {
+    if (!selectedDayHabitId) return;
+    // 不能打卡未来日期
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateToCheck = new Date(date);
+    dateToCheck.setHours(0, 0, 0, 0);
+    if (dateToCheck > today) return;
+    
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const nowIso = new Date().toISOString();
+    
+    // 先更新选中日期（这会触发月份自动切换）
+    setCalendarSelectedDate(date);
+    
+    setData(prev => {
+      const habits = prev.habits.map(h => {
+        if (h.id !== selectedDayHabitId) return h;
+        
+        const isCompleted = !!h.logs[dateKey]?.completed;
+        const newLogs = { ...h.logs };
+        
+        if (isCompleted) {
+          // 取消打卡：如果有备注，保留但标记为未完成；否则删除
+          if (newLogs[dateKey].note) {
+            newLogs[dateKey].completed = false;
+          } else {
+            delete newLogs[dateKey];
+          }
+        } else {
+          // 打卡：保留现有的备注
+          newLogs[dateKey] = {
+            ...newLogs[dateKey],
+            date: dateKey,
+            completed: true,
+            timestamp: nowIso,
+            note: newLogs[dateKey]?.note || logFormNote || undefined,
+          };
+          playCheckSound();
+        }
+        
+        return { ...h, logs: newLogs };
+      });
+      return { ...prev, habits };
+    });
+  };
+
+  // 保存月历面板中的备注
+  const saveCalendarLogDetails = (note?: string) => {
+    if (!selectedDayHabitId || !calendarSelectedDate) return;
+    const dateKey = format(calendarSelectedDate, 'yyyy-MM-dd');
+    const noteToSave = note !== undefined ? note : logFormNote;
+
+    setData(prev => {
+        const habits = prev.habits.map(h => {
+            if (h.id !== selectedDayHabitId) return h;
+            
+            const existingLog: DailyLog = h.logs[dateKey] || { date: dateKey, completed: false };
+            
+            // 如果备注为空，且未完成，则不创建记录
+            if (!noteToSave.trim() && !existingLog.completed) {
+                return h;
+            }
+            
+            const newLog: DailyLog = {
+                ...existingLog,
+                note: noteToSave.trim() || undefined,
+                completed: existingLog.completed || noteToSave.trim().length > 0,
+                timestamp: existingLog.timestamp || new Date().toISOString()
+            };
+
+            return {
+                ...h,
+                logs: { ...h.logs, [dateKey]: newLog }
+            };
+        });
+        return { ...prev, habits };
+    });
   };
 
   const closeLogModal = () => {
@@ -532,7 +655,7 @@ function App() {
                         todayLog={habit.logs[format(new Date(), 'yyyy-MM-dd')]}
                         onToggleToday={toggleToday}
                         onOpenDetail={openHabitModal}
-                        onDayClick={openLogModal}
+                        onDayClick={(habitId, date) => openCalendarModal(habitId, date)}
                         lang={lang}
                         weekStart={data.settings.weekStart || 'sunday'}
                     />
@@ -646,21 +769,6 @@ function App() {
       >
         <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">{t(lang, 'rating')}</label>
-                <div className="flex justify-between gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
-                    {[1, 2, 3, 4, 5].map(rating => (
-                        <button
-                            key={rating}
-                            onClick={() => setLogFormRating(rating)}
-                            className={`flex-1 py-2 rounded-md text-sm font-bold transition-all ${logFormRating === rating ? 'bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-400 hover:text-zinc-600'}`}
-                        >
-                            {rating}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">{t(lang, 'notes')}</label>
                 <textarea
                     rows={4}
@@ -674,9 +782,9 @@ function App() {
             <div className="pt-4 flex gap-3">
                 <button
                     onClick={saveLogDetails}
-                    disabled={!logFormNote.trim() && logFormRating === 0}
+                    disabled={!logFormNote.trim()}
                     className={`flex-1 py-3 rounded-lg font-semibold transition-opacity ${
-                        !logFormNote.trim() && logFormRating === 0
+                        !logFormNote.trim()
                             ? 'bg-zinc-300 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-500 cursor-not-allowed' 
                             : 'bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 hover:opacity-90'
                     }`}
@@ -694,6 +802,60 @@ function App() {
                 )}
             </div>
         </div>
+      </Modal>
+
+      {/* Calendar Panel Modal */}
+      <Modal
+        isOpen={isCalendarModalOpen}
+        onClose={closeCalendarModal}
+        title={(() => {
+          const habit = data.habits.find(h => h.id === selectedDayHabitId);
+          if (!habit) return t(lang, 'details');
+          return habit.title;
+        })()}
+      >
+        {selectedDayHabitId && (() => {
+          const habit = data.habits.find(h => h.id === selectedDayHabitId);
+          if (!habit) return null;
+
+          const dateKey = format(calendarSelectedDate, 'yyyy-MM-dd');
+          const currentLog = habit.logs[dateKey];
+
+          return (
+            <div className="space-y-6">
+              {/* 备注编辑区域 */}
+              <div className="pb-4 border-b border-zinc-200 dark:border-zinc-800">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    {t(lang, 'notes')} ({format(calendarSelectedDate, lang === 'zh' ? 'yyyy/MM/dd' : 'MMM d, yyyy')})
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={logFormNote}
+                    onChange={(e) => {
+                      const newNote = e.target.value;
+                      setLogFormNote(newNote);
+                      // 自动保存
+                      setTimeout(() => saveCalendarLogDetails(newNote), 300);
+                    }}
+                    placeholder="..."
+                    className="w-full px-4 py-3 rounded-lg bg-zinc-100 dark:bg-zinc-800 border-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all dark:text-white resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* 月历面板 */}
+              <CalendarPanel
+                habit={habit}
+                selectedDate={calendarSelectedDate}
+                onDateClick={selectDate}
+                onDateLongPress={toggleDateCompletion}
+                lang={lang}
+                weekStart={data.settings.weekStart || 'sunday'}
+              />
+            </div>
+          );
+        })()}
       </Modal>
     </div>
   );
