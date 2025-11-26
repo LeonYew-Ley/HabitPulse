@@ -211,7 +211,7 @@ const DateButton: React.FC<DateButtonProps> = ({
             : 'text-zinc-400 dark:text-zinc-600'
         }
         ${isSelected && !isFuture
-          ? 'ring-2 ring-offset-2 ring-zinc-900 dark:ring-zinc-100 dark:ring-offset-zinc-900' 
+          ? 'ring-2 ring-offset-2 ring-zinc-900 dark:ring-zinc-100 ring-offset-zinc-50 dark:ring-offset-zinc-900' 
           : ''
         }
         ${isToday && !isSelected && !isFuture
@@ -227,7 +227,7 @@ const DateButton: React.FC<DateButtonProps> = ({
       `}
       style={{
         backgroundColor: isCompleted && !isFuture ? color : undefined,
-        opacity: isCompleted && !isFuture && !isInMonth ? 0.5 : undefined, // 其他月份的打卡颜色更淡
+        opacity: isCompleted && !isFuture && !isInMonth ? 0.5 : (isCompleted && !isFuture ? 1 : undefined), // 其他月份的打卡颜色更淡，当前月份保持100%不透明度
         color: isCompleted && !isFuture 
           ? (isLightColor(color) ? '#09090b' : '#fafafa') // 浅色用黑色文字，深色用白色文字
           : undefined,
