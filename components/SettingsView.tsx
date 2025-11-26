@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Download, Upload, Trash2, AlertTriangle, CheckCircle2, Globe, Calendar, Moon, Sun, Monitor } from 'lucide-react';
+import { Download, Upload, Trash2, AlertTriangle, CheckCircle2, Globe, Calendar, Moon, Sun, Monitor, GalleryHorizontal } from 'lucide-react';
 import { AppData, Language, WeekStart } from '../types';
 import { t } from '../utils/i18n';
 import { LongPressButton } from '../App';
@@ -128,6 +128,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ data, onImport, onRe
                             {w === 'sunday' ? t(lang, 'sunday') : t(lang, 'monday')}
                         </button>
                     ))}
+                </div>
+             </div>
+
+             {/* Split Months */}
+             <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                <div className="flex items-center gap-3">
+                    <GalleryHorizontal size={18} className="text-zinc-500"/>
+                    <div>
+                        <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{t(lang, 'splitMonths')}</h3>
+                        <p className="text-xs text-zinc-500">{t(lang, 'splitMonthsDesc')}</p>
+                    </div>
+                </div>
+                <div className="flex bg-zinc-200 dark:bg-zinc-800 rounded-lg p-1">
+                    <button
+                        onClick={() => onUpdateSetting('splitMonths', false)}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${!data.settings.splitMonths ? 'bg-white dark:bg-zinc-600 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`}
+                    >
+                        {t(lang, 'disabled')}
+                    </button>
+                    <button
+                        onClick={() => onUpdateSetting('splitMonths', true)}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${data.settings.splitMonths ? 'bg-white dark:bg-zinc-600 shadow-sm text-zinc-900 dark:text-white' : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'}`}
+                    >
+                        {t(lang, 'enabled')}
+                    </button>
                 </div>
              </div>
           </div>

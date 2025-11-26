@@ -13,17 +13,20 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
   const contentRef = useRef<HTMLDivElement>(null);
   const [isExiting, setIsExiting] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  const isReadyToCloseRef = useRef(false);
 
   useEffect(() => {
+    let readyTimer: ReturnType<typeof setTimeout>;
+    let exitTimer: ReturnType<typeof setTimeout>;
+
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && isReadyToCloseRef.current) {
         handleClose();
       }
     };
 
     const handleClickOutside = (e: MouseEvent) => {
-      // 如果点击的是背景层（不是模态框内容），则关闭
-      if (contentRef.current && !contentRef.current.contains(e.target as Node)) {
+      if (isReadyToCloseRef.current && contentRef.current && !contentRef.current.contains(e.target as Node)) {
         handleClose();
       }
     };
@@ -31,22 +34,36 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
     if (isOpen) {
       setShouldRender(true);
       setIsExiting(false);
+      isReadyToCloseRef.current = false;
       document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleEscape);
-      // 使用 mousedown 而不是 click，避免与内部元素的 click 事件冲突
-      setTimeout(() => {
+      
+      readyTimer = setTimeout(() => {
+        isReadyToCloseRef.current = true;
         document.addEventListener('mousedown', handleClickOutside);
-      }, 0);
+      }, 300);
+    } else if (shouldRender) {
+      setIsExiting(true);
+      isReadyToCloseRef.current = false;
+      exitTimer = setTimeout(() => {
+        setShouldRender(false);
+        setIsExiting(false);
+      }, 200);
     }
 
     return () => {
+      clearTimeout(readyTimer);
+      clearTimeout(exitTimer);
       document.body.style.overflow = 'unset';
       window.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, shouldRender]); // 移除了 isReadyToClose 依赖
 
   const handleClose = () => {
+    // 如果还没准备好关闭，或者正在退出，忽略
+    if (!isReadyToCloseRef.current && isOpen) return;
+    
     setIsExiting(true);
     setTimeout(() => {
       onClose();

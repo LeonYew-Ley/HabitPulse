@@ -60,6 +60,10 @@ export const translations = {
     systemTheme: 'Follow System',
     previousMonth: 'Previous Month',
     nextMonth: 'Next Month',
+    splitMonths: 'Split Months',
+    splitMonthsDesc: 'Visually separate months in the heatmap.',
+    enabled: 'On',
+    disabled: 'Off',
   },
   zh: {
     dashboard: '仪表盘',
@@ -119,6 +123,10 @@ export const translations = {
     systemTheme: '跟随系统',
     previousMonth: '上个月',
     nextMonth: '下个月',
+    splitMonths: '分隔自然月',
+    splitMonthsDesc: '在热力图中区分不同月份。',
+    enabled: '开',
+    disabled: '关',
   }
 };
 

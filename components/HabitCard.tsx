@@ -14,6 +14,7 @@ interface HabitCardProps {
   onDayClick: (habitId: string, date: Date) => void;
   lang: Language;
   weekStart: WeekStart;
+  splitMonths?: boolean;
 }
 
 export const HabitCard: React.FC<HabitCardProps> = ({ 
@@ -23,7 +24,8 @@ export const HabitCard: React.FC<HabitCardProps> = ({
   onOpenDetail, 
   onDayClick,
   lang,
-  weekStart
+  weekStart,
+  splitMonths = false
 }) => {
   const isCompleted = todayLog?.completed;
   const [animate, setAnimate] = useState(false);
@@ -102,6 +104,7 @@ export const HabitCard: React.FC<HabitCardProps> = ({
           color={habit.color} 
           onClickDay={(date) => onDayClick(habit.id, date)}
           weekStart={weekStart}
+          splitMonths={splitMonths}
           lang={lang}
         />
       </div>

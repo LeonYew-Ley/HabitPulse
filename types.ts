@@ -30,6 +30,7 @@ export interface AppData {
     userName: string;
     language: Language;
     weekStart: WeekStart;
+    splitMonths?: boolean;
   };
 }
 

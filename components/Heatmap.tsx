@@ -10,6 +10,7 @@ interface HeatmapProps {
   onClickDay: (date: Date, log?: DailyLog) => void;
   interactive?: boolean;
   weekStart?: WeekStart;
+  splitMonths?: boolean;
   lang?: Language;
 }
 
@@ -19,6 +20,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({
   onClickDay, 
   interactive = true, 
   weekStart = 'sunday',
+  splitMonths = false,
   lang = 'en'
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,22 +63,41 @@ export const Heatmap: React.FC<HeatmapProps> = ({
     });
   }, [adjustedStartDate, endDate]);
 
-  // Group by weeks for the grid structure
+  // Group by weeks for the grid structure with month-splitting logic
   const weeks = useMemo(() => {
-    const weeksArray: Date[][] = [];
-    let currentWeek: Date[] = [];
+    const weeksArray: (Date | null)[][] = [];
+    let currentWeek: (Date | null)[] = new Array(7).fill(null);
+    let lastProcessedDay: Date | null = null;
 
     days.forEach((day) => {
-      currentWeek.push(day);
-      if (currentWeek.length === 7) {
-        weeksArray.push(currentWeek);
-        currentWeek = [];
+      // Determine day of week index (0-6)
+      const dayOfWeek = day.getDay();
+      const weekIndex = (dayOfWeek < weekStartsOn ? 7 : 0) + dayOfWeek - weekStartsOn;
+
+      // Check if we need to split the week due to month change
+      // Only if splitMonths is enabled
+      const isMonthChange = splitMonths && lastProcessedDay && !isSameMonth(lastProcessedDay, day);
+
+      if (isMonthChange) {
+         // Month changed! Push current week (even if incomplete) and start a new one
+         weeksArray.push([...currentWeek]);
+         currentWeek = new Array(7).fill(null);
+      } else if (weekIndex === 0 && lastProcessedDay) {
+         // Normal week change (Sunday/Monday)
+         weeksArray.push([...currentWeek]);
+         currentWeek = new Array(7).fill(null);
       }
+
+      // Place the day in the current week
+      currentWeek[weekIndex] = day;
+      lastProcessedDay = day;
     });
-    // Push partial week if exists
-    if (currentWeek.length > 0) weeksArray.push(currentWeek);
+
+    // Push final partial week if exists
+    if (currentWeek.some(d => d !== null)) weeksArray.push(currentWeek);
+    
     return weeksArray;
-  }, [days]);
+  }, [days, weekStartsOn, splitMonths]);
 
   // Handle Wheel Scroll
   useEffect(() => {
@@ -164,9 +185,45 @@ export const Heatmap: React.FC<HeatmapProps> = ({
 
             <div className="flex gap-[3px] min-w-max pr-1">
             {weeks.map((week, wIndex) => {
+                // Determine if this column is the start of a new month
+                // Check the first valid day in this week
+                const firstValidDay = week.find(d => d !== null);
+                
+                let isNewMonthStart = false;
+                if (splitMonths && wIndex > 0 && firstValidDay) {
+                    const prevWeek = weeks[wIndex - 1];
+                    const prevValidDay = prevWeek.find(d => d !== null);
+                    
+                    if (prevValidDay && !isSameMonth(firstValidDay, prevValidDay)) {
+                        isNewMonthStart = true;
+                    }
+                }
+
+                // Determine margin size
+                // If the week starts with empty cells (null), it implies a mid-week split, 
+                // so we don't need much extra margin as the visual gap is created by the vertical offset.
+                // If the week starts with a day (week[0] !== null), it's a full column start, 
+                // so we need more margin to separate it from the previous full block.
+                let marginClass = '';
+                if (isNewMonthStart) {
+                    if (week[0] === null) {
+                        marginClass = 'ml-[2px]'; // Smaller gap for mid-week splits (visual gap created by offset)
+                    } else {
+                        marginClass = 'ml-3'; // Large gap (12px, approx 1 cell width) for full column separations
+                    }
+                }
+
                 return (
-                <div key={wIndex} className="flex flex-col gap-[3px]">
+                <div 
+                  key={wIndex} 
+                  className={`flex flex-col gap-[3px] ${marginClass}`}
+                >
                     {week.map((day, dIndex) => {
+                        if (!day) {
+                            // Render placeholder for empty day
+                            return <div key={`empty-${wIndex}-${dIndex}`} className="w-2.5 h-2.5 sm:w-3 sm:h-3" />;
+                        }
+
                         const dateKey = format(day, 'yyyy-MM-dd');
                         const log = logs[dateKey];
                         const isToday = isSameDay(day, today);
@@ -179,25 +236,24 @@ export const Heatmap: React.FC<HeatmapProps> = ({
                         let bgClass = '';
                         let opacityStyle = 1;
                         let customBgColor = undefined;
+                        let filterStyle = 'none';
+
+                        // Base background pattern for month distinction
+                        bgClass = isEvenMonth 
+                            ? 'bg-zinc-100 dark:bg-zinc-800/50' 
+                            : 'bg-zinc-200 dark:bg-zinc-800';
 
                         if (log?.completed) {
                             customBgColor = color;
-                            // Slight variation for history vs today
-                            if (log.rating) {
-                                opacityStyle = 0.4 + (log.rating / 10);
-                            } else {
-                                opacityStyle = 1;
+                            // Apply month distinction to completed items too
+                            // Even months (which have lighter background) get lighter (transparent) completed color
+                            // Odd months (darker background) get solid completed color
+                            if (isEvenMonth) {
+                                opacityStyle = 0.5;
                             }
                         } else {
                             // Empty State with Alternating Month Patterns
-                            // Even Months: Standard lighter gray
-                            // Odd Months: Slightly darker gray to create "blocks"
-                            // Using tailored zinc shades for light/dark mode
-                            bgClass = isEvenMonth 
-                                ? 'bg-zinc-100 dark:bg-zinc-800/50' 
-                                : 'bg-zinc-200 dark:bg-zinc-800';
-                            
-                            // Remove heavy opacity fade for past months so the pattern is visible
+                            // Background classes applied above
                             opacityStyle = 1; 
                         }
                         
@@ -214,6 +270,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({
                             style={{
                                 backgroundColor: customBgColor,
                                 opacity: opacityStyle,
+                                filter: filterStyle,
                             }}
                             title={`${format(day, 'MMM d, yyyy')}${log?.completed ? ` - ${t(lang as Language, 'done')}` : ''}`}
                         />

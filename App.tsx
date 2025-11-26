@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { Plus, LayoutGrid, Settings as SettingsIcon, Moon, Sun, Check, Trash2 } from 'lucide-react';
 
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { AppData, Habit, HABIT_COLORS, ViewState, DailyLog } from './types';
+import { AppData, Habit, HABIT_COLORS, ViewState, DailyLog, WeekStart } from './types';
 import { HabitCard } from './components/HabitCard';
 import { Modal } from './components/Modal';
 import { SettingsView } from './components/SettingsView';
@@ -22,7 +22,8 @@ const INITIAL_DATA: AppData = {
     theme: 'system',
     userName: 'User',
     language: 'zh',
-    weekStart: 'sunday',
+    weekStart: 'monday',
+    splitMonths: true,
   },
 };
 
@@ -529,6 +530,9 @@ function App() {
 
   const handleFabPointerUp = (e: React.PointerEvent) => {
     (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    e.stopPropagation();
+    e.preventDefault();
+    
     if (!isDragging.current) {
         // If it wasn't a drag, treat as click
         if (view === 'dashboard') openHabitModal();
@@ -658,6 +662,7 @@ function App() {
                         onDayClick={(habitId, date) => openCalendarModal(habitId, date)}
                         lang={lang}
                         weekStart={data.settings.weekStart || 'sunday'}
+                        splitMonths={data.settings.splitMonths ?? false}
                     />
                 ))
             )}
@@ -832,12 +837,8 @@ function App() {
                   <textarea
                     rows={3}
                     value={logFormNote}
-                    onChange={(e) => {
-                      const newNote = e.target.value;
-                      setLogFormNote(newNote);
-                      // 自动保存
-                      setTimeout(() => saveCalendarLogDetails(newNote), 300);
-                    }}
+                    onChange={(e) => setLogFormNote(e.target.value)}
+                    onBlur={() => saveCalendarLogDetails(logFormNote)}
                     placeholder="..."
                     className="w-full px-4 py-3 rounded-lg bg-zinc-100 dark:bg-zinc-800 border-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all dark:text-white resize-none"
                   />
