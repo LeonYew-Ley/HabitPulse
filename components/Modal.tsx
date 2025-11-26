@@ -90,7 +90,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
           isExiting ? 'modal-exit' : 'modal-enter'
         }`}
       >
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-zinc-100 dark:border-zinc-800">
           <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
           <button 
             onClick={handleClose}
@@ -99,7 +99,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
             <X size={20} className="text-zinc-500" />
           </button>
         </div>
-        <div className="px-6 pb-6 pt-4 overflow-y-auto max-h-[80vh]">
+        <div className="px-6 pb-6 pt-3 overflow-y-auto max-h-[85vh]">
           {children}
         </div>
       </div>

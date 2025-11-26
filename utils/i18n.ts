@@ -64,6 +64,7 @@ export const translations = {
     splitMonthsDesc: 'Visually separate months in the heatmap.',
     enabled: 'On',
     disabled: 'Off',
+    longPressToToggle: 'Long press to toggle status',
   },
   zh: {
     dashboard: '仪表盘',
@@ -127,6 +128,7 @@ export const translations = {
     splitMonthsDesc: '在热力图中区分不同月份。',
     enabled: '开',
     disabled: '关',
+    longPressToToggle: '长按日期可以快速打卡',
   }
 };
 

@@ -839,9 +839,9 @@ function App() {
           const currentLog = habit.logs[dateKey];
 
           return (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* 备注编辑区域 */}
-              <div className="pb-4 border-b border-zinc-200 dark:border-zinc-800">
+              <div className="pb-1">
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                     {t(lang, 'notes')} ({format(calendarSelectedDate, lang === 'zh' ? 'yyyy/MM/dd' : 'MMM d, yyyy')})
@@ -855,6 +855,12 @@ function App() {
                     className="w-full px-4 py-3 rounded-lg bg-zinc-100 dark:bg-zinc-800 border-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all dark:text-white resize-none"
                   />
                 </div>
+              </div>
+
+              {/* 分割线与提示语 */}
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-zinc-400 flex-shrink-0">{t(lang, 'longPressToToggle')}</span>
+                <div className="h-[1px] flex-1 bg-zinc-200 dark:bg-zinc-800" />
               </div>
 
               {/* 月历面板 */}
