@@ -1,6 +1,18 @@
 # Habit Pulse 自律脉动 💓
+ 
+> [**Live Demo 在线演示**](https://habits.leonyew.space)
 
 HabitPulse 是一款离线优先的习惯追踪应用。它采用现代化的 Bento 网格美学设计，通过类似 GitHub 的贡献热力图来深度可视化你的习惯数据，帮助你保持自律的脉动。
+
+## 📸 应用截图 (Screenshots)
+
+<div style="display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px;">
+ <img src="README_IMG/HomePageThemeSwitch.png" alt="Dark Mode" height="400">
+ <img src="README_IMG/CleanHomePage.PNG" alt="Clean Home Page" height="400">
+  <img src="README_IMG/EditHabit.PNG" alt="Edit Habit" height="400">
+ <img src="README_IMG/HabitCalendar.PNG" alt="Habit Calendar" height="400">
+ <img src="README_IMG/Settings.PNG" alt="Settings" height="400">
+</div>
 
 ## ✨ 核心特性 (Features)
 
@@ -24,18 +36,17 @@ HabitPulse 是一款离线优先的习惯追踪应用。它采用现代化的 Be
 
 ### 🚀 待开发功能 (To-Do)
 **功能增强**
-- [ ] **自定义习惯颜色**: 提供更多配色方案，让习惯分类更直观。
 - [ ] **WebDAV 同步**: 实现多设备间的数据同步，摆脱本地存储限制。
 - [ ] **界面趣味化**: 引入更多游戏化元素和有趣的 UI 细节。
 
 **体验优化 & Bug 修复**
-- [ ] 月份之间有间隔，方便看每月情况
 
 **战略规划**
 - [ ] **Web 部署**: 部署至 Github Pages，提供在线访问。
 - [ ] **小程序适配**: 移植核心功能至微信小程序，方便随时打卡。
 
 ### ✅ 已完成功能
+- [x] 月份之间有间隔，方便看每月情况
 - [x] **表单交互**: 创建习惯时若未输入名称，自动置灰提交按钮。
 - [X] **布局优化**: 调整习惯卡片布局，提升屏幕空间利用率。
 - [x] 基础打卡与热力图展示
@@ -46,6 +57,7 @@ HabitPulse 是一款离线优先的习惯追踪应用。它采用现代化的 Be
 - [x] **暗色模式优化**: 修复深色主题下热力图遮罩的渐变显示问题。
 - [x] DashBoard 隐藏，增加信息密度
 ### ✖️ 放弃的功能
+- [ ] **自定义习惯颜色**: 提供更多配色方案，让习惯分类更直观。(太多自定义需求影响用户效率)
 - [ ] **Emoji 支持**: 允许为每个习惯添加 Emoji 图标，增加趣味性。（自己在标题里添加Emoji就好）
 
 ## 💡 其他想法 (Ideas)
