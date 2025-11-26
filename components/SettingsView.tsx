@@ -18,7 +18,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ data, onImport, onRe
   const lang = data.settings.language;
 
   const handleExport = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+    // Clean up data before export: remove deprecated fields (rating, color) from logs
+    const cleanData = JSON.parse(JSON.stringify(data)); // Deep clone
+    if (cleanData.habits) {
+      cleanData.habits.forEach((habit: any) => {
+        if (habit.logs) {
+          Object.keys(habit.logs).forEach((dateKey) => {
+            const log = habit.logs[dateKey];
+            // Remove deprecated fields
+            delete log.rating;
+            delete log.color;
+          });
+        }
+      });
+    }
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cleanData));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
     downloadAnchorNode.setAttribute("download", `habitpulse_backup_${new Date().toISOString().split('T')[0]}.json`);

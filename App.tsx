@@ -637,7 +637,19 @@ function App() {
         {view === 'settings' ? (
           <SettingsView 
             data={data} 
-            onImport={(newData) => setData(newData)}
+            onImport={(newData) => {
+                // Merge imported data with initial settings to ensure all fields exist
+                const mergedData: AppData = {
+                    ...newData,
+                    settings: {
+                        ...INITIAL_DATA.settings, // Defaults
+                        ...newData.settings,      // Imported overrides defaults
+                        // Explicitly ensure splitMonths is present if missing in imported data
+                        splitMonths: newData.settings?.splitMonths ?? INITIAL_DATA.settings.splitMonths
+                    }
+                };
+                setData(mergedData);
+            }}
             onReset={() => setData(INITIAL_DATA)}
             onUpdateSetting={updateSetting}
           />
