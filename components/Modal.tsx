@@ -4,11 +4,12 @@ import { X } from 'lucide-react';
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title: React.ReactNode;
   children: React.ReactNode;
+  showCloseButton?: boolean;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, showCloseButton = true }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isExiting, setIsExiting] = useState(false);
@@ -91,15 +92,19 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
         }`}
       >
         <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-zinc-100 dark:border-zinc-800">
-          <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-          <button 
-            onClick={handleClose}
-            className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            <X size={20} className="text-zinc-500" />
-          </button>
+          <div className="text-lg font-semibold tracking-tight flex-1 mr-4 min-w-0">
+            {title}
+          </div>
+          {showCloseButton && (
+            <button 
+              onClick={handleClose}
+              className="p-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
+            >
+              <X size={20} className="text-zinc-500" />
+            </button>
+          )}
         </div>
-        <div className="px-6 pb-6 pt-3 overflow-y-auto max-h-[85vh]">
+        <div className="px-6 pb-6 pt-3 overflow-y-auto max-h-[calc(100dvh-10rem)]">
           {children}
         </div>
       </div>

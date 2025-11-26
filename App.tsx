@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { Plus, LayoutGrid, Settings as SettingsIcon, Moon, Sun, Check, Trash2 } from 'lucide-react';
+import { Plus, LayoutGrid, Settings as SettingsIcon, Moon, Sun, Check, Trash2, Pencil, X } from 'lucide-react';
 
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { AppData, Habit, HABIT_COLORS, ViewState, DailyLog, WeekStart } from './types';
@@ -108,6 +108,7 @@ function App() {
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [selectedDayHabitId, setSelectedDayHabitId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date>(new Date());
@@ -218,7 +219,7 @@ function App() {
     }));
   };
 
-  const saveHabit = () => {
+  const saveHabit = (shouldClose: boolean = true) => {
     if (!habitFormTitle.trim()) return;
     
     setData(prev => {
@@ -231,6 +232,8 @@ function App() {
                 ? { ...h, title: habitFormTitle, color: habitFormColor }
                 : h
             );
+            // Also update the editingHabit state so the modal reflects changes immediately if not closed
+            setEditingHabit(prevEdit => prevEdit ? { ...prevEdit, title: habitFormTitle, color: habitFormColor } : null);
         } else {
             // Create new
             const newHabit: Habit = {
@@ -246,7 +249,9 @@ function App() {
         return { ...prev, habits: newHabits };
     });
     
-    closeHabitModal();
+    if (shouldClose) {
+        closeHabitModal();
+    }
   };
 
   const deleteHabit = (id: string) => {
@@ -356,6 +361,7 @@ function App() {
   const closeHabitModal = () => {
     setIsHabitModalOpen(false);
     setEditingHabit(null);
+    setIsEditingTitle(false);
   };
 
   const openLogModal = (habitId: string, date: Date) => {
@@ -711,12 +717,67 @@ function App() {
       <Modal 
         isOpen={isHabitModalOpen} 
         onClose={closeHabitModal}
-        title={editingHabit ? t(lang, 'details') : t(lang, 'create')}
+        showCloseButton={!isEditingTitle}
+        title={
+          editingHabit ? (
+            isEditingTitle ? (
+              <div className="flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={habitFormTitle}
+                    onChange={(e) => setHabitFormTitle(e.target.value)}
+                    className="w-full py-1 bg-transparent border-b-2 border-zinc-900 dark:border-zinc-100 outline-none text-lg font-semibold text-zinc-900 dark:text-zinc-100"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setIsEditingTitle(false);
+                        saveHabit();
+                      } else if (e.key === 'Escape') {
+                        setIsEditingTitle(false);
+                        setHabitFormTitle(editingHabit.title);
+                      }
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    setIsEditingTitle(false);
+                    saveHabit(false);
+                  }}
+                  className="p-1 text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-colors"
+                >
+                  <Check size={20} />
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditingTitle(false);
+                    setHabitFormTitle(editingHabit.title);
+                  }}
+                  className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            ) : (
+              <div 
+                className="flex items-center gap-2 cursor-pointer group"
+                onClick={() => {
+                  setIsEditingTitle(true);
+                  setHabitFormTitle(editingHabit.title);
+                }}
+              >
+                <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{editingHabit.title}</span>
+                <Pencil size={16} className="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
+              </div>
+            )
+          ) : t(lang, 'create')
+        }
       >
         <div className="space-y-6">
             {/* View Stats if editing */}
             {editingHabit && (
-                 <div className="mb-8 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-700">
+                 <div className="mb-8 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-300 dark:border-zinc-600">
                     <h4 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-3">History</h4>
                     <div className="overflow-x-auto">
                             <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
@@ -726,16 +787,18 @@ function App() {
                 </div>
             )}
 
-            <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">{t(lang, 'habitName')}</label>
-                <input 
-                    type="text" 
-                    value={habitFormTitle}
-                    onChange={(e) => setHabitFormTitle(e.target.value)}
-                    placeholder="e.g. Read for 20 mins"
-                    className="w-full px-4 py-3 rounded-lg bg-zinc-100 dark:bg-zinc-800 border-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all dark:text-white"
-                />
-            </div>
+            {!editingHabit && (
+              <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">{t(lang, 'habitName')}</label>
+                  <input 
+                      type="text" 
+                      value={habitFormTitle}
+                      onChange={(e) => setHabitFormTitle(e.target.value)}
+                      placeholder="e.g. Read for 20 mins"
+                      className="w-full px-4 py-3 rounded-lg bg-zinc-100 dark:bg-zinc-800 border-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 outline-none transition-all dark:text-white"
+                  />
+              </div>
+            )}
 
             <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">{t(lang, 'accentColor')}</label>
@@ -755,7 +818,7 @@ function App() {
 
             <div className="pt-4 flex gap-3">
                 <button 
-                    onClick={saveHabit}
+                    onClick={() => saveHabit(true)}
                     disabled={!habitFormTitle.trim()}
                     className={`flex-1 py-3 rounded-lg font-semibold transition-opacity ${
                         !habitFormTitle.trim() 
