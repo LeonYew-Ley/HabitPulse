@@ -4,6 +4,24 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Habit, DailyLog, Language, WeekStart } from '../types';
 import { t } from '../utils/i18n';
 
+// 判断颜色是深色还是浅色，返回 true 表示浅色（应该用黑色文字），false 表示深色（应该用白色文字）
+const isLightColor = (hexColor: string): boolean => {
+  // 移除 # 号
+  const hex = hexColor.replace('#', '');
+  
+  // 转换为 RGB
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  // 计算相对亮度（使用 W3C 标准公式）
+  // https://www.w3.org/WAI/ER/WD-AERT/#color-contrast
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  
+  // 如果亮度大于 0.5，认为是浅色，应该用黑色文字
+  return luminance > 0.5;
+};
+
 // 日期按钮组件，支持长按
 interface DateButtonProps {
   day: Date;
@@ -184,11 +202,13 @@ const DateButton: React.FC<DateButtonProps> = ({
           ? 'opacity-40 cursor-not-allowed' 
           : 'cursor-pointer'
         }
-        ${isInMonth 
-          ? isFuture 
-            ? 'text-zinc-400 dark:text-zinc-600' 
-            : 'text-zinc-900 dark:text-zinc-100'
-          : 'text-zinc-400 dark:text-zinc-600'
+        ${isCompleted && !isFuture
+          ? '' // 已打卡日期的文字颜色由 style 动态设置
+          : isInMonth 
+            ? isFuture 
+              ? 'text-zinc-400 dark:text-zinc-600' 
+              : 'text-zinc-900 dark:text-zinc-100'
+            : 'text-zinc-400 dark:text-zinc-600'
         }
         ${isSelected && !isFuture
           ? 'ring-2 ring-offset-2 ring-zinc-900 dark:ring-zinc-100 dark:ring-offset-zinc-900' 
@@ -208,6 +228,9 @@ const DateButton: React.FC<DateButtonProps> = ({
       style={{
         backgroundColor: isCompleted && !isFuture ? color : undefined,
         opacity: isCompleted && !isFuture && !isInMonth ? 0.5 : undefined, // 其他月份的打卡颜色更淡
+        color: isCompleted && !isFuture 
+          ? (isLightColor(color) ? '#09090b' : '#fafafa') // 浅色用黑色文字，深色用白色文字
+          : undefined,
         WebkitUserSelect: 'none',
         userSelect: 'none',
         touchAction: 'manipulation', // 允许触摸操作，但禁用双击缩放
