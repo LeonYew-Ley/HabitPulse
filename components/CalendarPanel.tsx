@@ -207,6 +207,7 @@ const DateButton: React.FC<DateButtonProps> = ({
       `}
       style={{
         backgroundColor: isCompleted && !isFuture ? color : undefined,
+        opacity: isCompleted && !isFuture && !isInMonth ? 0.5 : undefined, // 其他月份的打卡颜色更淡
         WebkitUserSelect: 'none',
         userSelect: 'none',
         touchAction: 'manipulation', // 允许触摸操作，但禁用双击缩放
@@ -247,15 +248,22 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
   weekStart
 }) => {
   const [currentMonth, setCurrentMonth] = useState(() => startOfMonth(selectedDate));
+  const isManualMonthChangeRef = useRef(false);
   const today = new Date();
 
   // 当选中日期改变时，如果不在当前月份，则切换到该月份
+  // 但如果用户手动切换了月份，则不自动切换
   useEffect(() => {
+    if (isManualMonthChangeRef.current) {
+      isManualMonthChangeRef.current = false;
+      return;
+    }
     const selectedMonth = startOfMonth(selectedDate);
-    if (!isSameMonth(selectedMonth, currentMonth)) {
+    const currentMonthStart = startOfMonth(currentMonth);
+    if (!isSameMonth(selectedMonth, currentMonthStart)) {
       setCurrentMonth(selectedMonth);
     }
-  }, [selectedDate, currentMonth]);
+  }, [selectedDate]);
 
   // 计算当前月份的所有日期
   const monthStart = startOfMonth(currentMonth);
@@ -281,12 +289,14 @@ export const CalendarPanel: React.FC<CalendarPanelProps> = ({
   }, [lang, weekStart]);
 
   const handlePrevMonth = () => {
+    isManualMonthChangeRef.current = true;
     const newMonth = subMonths(currentMonth, 1);
     setCurrentMonth(newMonth);
   };
 
   const handleNextMonth = () => {
     if (!canGoNextMonth) return;
+    isManualMonthChangeRef.current = true;
     const newMonth = addMonths(currentMonth, 1);
     setCurrentMonth(newMonth);
   };
