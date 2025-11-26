@@ -6,6 +6,7 @@ import { t } from '../utils/i18n';
 import { format } from 'date-fns';
 import { getDailyQuote } from '../utils/quotes';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import Marquee from 'react-fast-marquee';
 
 interface StatsBannerProps {
   data: AppData;
@@ -14,11 +15,9 @@ interface StatsBannerProps {
 
 export const StatsBanner: React.FC<StatsBannerProps> = ({ data, lang }) => {
   const [isCollapsed, setIsCollapsed] = useLocalStorage('stats_banner_collapsed', false);
-  const quoteRef = useRef<HTMLDivElement>(null);
   const quoteContainerRef = useRef<HTMLDivElement>(null);
-  const firstQuoteRef = useRef<HTMLSpanElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
   const [shouldScroll, setShouldScroll] = useState(false);
-  const [scrollDistance, setScrollDistance] = useState('50%');
   const todayKey = format(new Date(), 'yyyy-MM-dd');
   
   const totalHabits = data.habits.filter(h => !h.archived).length;
@@ -34,19 +33,10 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ data, lang }) => {
     }
     
     const checkOverflow = () => {
-      if (quoteRef.current && quoteContainerRef.current && firstQuoteRef.current) {
-        // 获取第一个完整文本的宽度（包括图标和间距）
-        const firstQuoteWidth = firstQuoteRef.current.offsetWidth;
+      if (quoteContainerRef.current && textRef.current) {
         const containerWidth = quoteContainerRef.current.clientWidth;
-        const needsScroll = firstQuoteWidth > containerWidth;
-        
-        setShouldScroll(needsScroll);
-        
-        if (needsScroll) {
-          // 滚动距离应该是第一个完整文本的宽度（包括图标和间距）
-          // 这样滚动后，第一个文本完全消失，第二个文本从容器左侧开始显示
-          setScrollDistance(`-${firstQuoteWidth}px`);
-        }
+        const textWidth = textRef.current.offsetWidth;
+        setShouldScroll(textWidth > containerWidth);
       }
     };
 
@@ -138,29 +128,27 @@ export const StatsBanner: React.FC<StatsBannerProps> = ({ data, lang }) => {
                     ref={quoteContainerRef}
                     className="text-zinc-500 dark:text-zinc-400 text-sm italic opacity-80 overflow-hidden relative"
                   >
-                    <div 
-                      ref={quoteRef}
-                      className={`flex items-center gap-1.5 whitespace-nowrap ${shouldScroll ? 'animate-scroll-quote' : ''}`}
-                      style={shouldScroll ? {
-                        // 总时长 = 滚动时间 + 停留时间(1.5s) + 返回时间(0.2s)
-                        // 滚动时间根据文本长度计算，最少10秒
-                        animation: `scroll-quote ${Math.max(10, quote.length * 0.1) + 1.7}s linear infinite`,
-                        '--scroll-distance': scrollDistance,
-                      } as React.CSSProperties & { '--scroll-distance': string } : {}}
-                    >
-                      <span ref={firstQuoteRef} className="inline-flex items-center gap-1.5">
-                        <Quote size={12} className="flex-shrink-0" />
-                        <span className="inline-block">{quote}</span>
-                      </span>
-                      {shouldScroll && (
-                        <>
-                          <span className="ml-8 inline-flex items-center gap-1.5">
-                            <Quote size={12} className="flex-shrink-0" />
-                            <span className="inline-block">{quote}</span>
-                          </span>
-                        </>
-                      )}
-                    </div>
+                    {shouldScroll ? (
+                      <Marquee
+                        gradient={false}
+                        speed={40}
+                        delay={0}
+                        pauseOnHover={true}
+                        className="overflow-hidden"
+                      >
+                         <span className="inline-flex items-center gap-1.5 mr-8">
+                          <Quote size={12} className="flex-shrink-0" />
+                          <span className="inline-block">{quote}</span>
+                        </span>
+                      </Marquee>
+                    ) : (
+                      <div className="flex items-center gap-1.5 whitespace-nowrap">
+                        <span ref={textRef} className="inline-flex items-center gap-1.5">
+                          <Quote size={12} className="flex-shrink-0" />
+                          <span className="inline-block">{quote}</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
