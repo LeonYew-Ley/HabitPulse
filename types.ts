@@ -31,6 +31,15 @@ export interface AppData {
     language: Language;
     weekStart: WeekStart;
     splitMonths?: boolean;
+    webDav?: {
+      enabled: boolean;
+      url: string;
+      username: string;
+      password: string;
+      proxyUrl?: string;
+      backupCount: number;
+      autoSync: boolean;
+    };
   };
 }
 

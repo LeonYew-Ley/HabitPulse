@@ -12,6 +12,7 @@ import { StatsBanner } from './components/StatsBanner';
 import { CalendarPanel } from './components/CalendarPanel';
 import { t } from './utils/i18n';
 import { playCheckSound } from './utils/sound';
+import { createWebDavClient, performBackup } from './utils/webdav';
 
 // Simple ID generator since we can't easily import uuid without package manager in this constraint
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -126,6 +127,23 @@ function App() {
   const lang = data.settings.language || 'zh';
 
   // --- Effects ---
+
+  // Auto-sync WebDAV
+  useEffect(() => {
+    const webDavSettings = data.settings.webDav;
+    if (webDavSettings?.enabled && webDavSettings.autoSync && webDavSettings.url && webDavSettings.username) {
+      const timer = setTimeout(async () => {
+        try {
+          const client = createWebDavClient(webDavSettings.url, webDavSettings.username, webDavSettings.password, webDavSettings.proxyUrl);
+          await performBackup(client, data, webDavSettings.backupCount || 5);
+        } catch (e) {
+          console.error('Auto-sync failed', e);
+        }
+      }, 5000); // 5 second debounce
+
+      return () => clearTimeout(timer);
+    }
+  }, [data]);
 
   // Scroll handler for auto-hiding nav
   useEffect(() => {
